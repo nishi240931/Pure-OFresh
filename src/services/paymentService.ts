@@ -1,8 +1,19 @@
 import crypto from 'crypto';
+import Razorpay from 'razorpay';
+import { validatePaymentVerification, validateWebhookSignature } from 'razorpay/dist/utils/razorpay-utils';
 import { db } from '@/lib/db';
 import { orderRepository } from '@/repositories/orderRepository';
 import { paymentRepository } from '@/repositories/paymentRepository';
 import { PaymentStatus, OrderStatus, PaymentMethod } from '@prisma/client';
+
+const keyId = process.env.RAZORPAY_KEY_ID || '';
+const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+
+// Initialize Razorpay SDK client
+const razorpay = new Razorpay({
+  key_id: keyId,
+  key_secret: keySecret,
+});
 
 export class PaymentService {
   async createRazorpayOrder(userId: string, orderId: string) {
@@ -18,36 +29,21 @@ export class PaymentService {
     }
 
     const amountInPaise = Math.round(order.grandTotal * 100);
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-
     let rpOrderId = `order_mock_${Math.random().toString(36).substring(2, 11)}`;
 
-    // Invoke actual Razorpay API if credentials are valid and not placeholders
+    // Invoke actual Razorpay SDK if credentials are valid and not placeholders
     if (keyId && keySecret && !keyId.includes('placeholder') && !keySecret.includes('placeholder')) {
       try {
-        const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
-        const res = await fetch('https://api.razorpay.com/v1/orders', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${auth}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            amount: amountInPaise,
-            currency: 'INR',
-            receipt: order.orderNumber,
-          }),
+        const rpOrder = await razorpay.orders.create({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: order.orderNumber,
         });
-
-        const data = await res.json();
-        if (data && data.id) {
-          rpOrderId = data.id;
-        } else {
-          console.warn('Razorpay API error response, falling back to mock Order ID:', data);
+        if (rpOrder && rpOrder.id) {
+          rpOrderId = rpOrder.id;
         }
       } catch (err) {
-        console.error('Razorpay API call failed, falling back to mock Order ID:', err);
+        console.error('Razorpay SDK Order call failed, falling back to mock Order ID:', err);
       }
     }
 
@@ -95,18 +91,22 @@ export class PaymentService {
       };
     }
 
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
     let isValid = false;
 
     // Direct mock match for simulation or if secret is placeholder
     if (rpOrderId.startsWith('order_mock_') || !keySecret || keySecret.includes('placeholder')) {
       isValid = true;
     } else {
-      const generated = crypto
-        .createHmac('sha256', keySecret)
-        .update(`${rpOrderId}|${rpPaymentId}`)
-        .digest('hex');
-      isValid = generated === rpSignature;
+      try {
+        isValid = validatePaymentVerification(
+          { order_id: rpOrderId, payment_id: rpPaymentId },
+          rpSignature,
+          keySecret
+        );
+      } catch (err) {
+        console.error('SDK signature validation threw error:', err);
+        isValid = false;
+      }
     }
 
     if (!isValid) {
@@ -166,9 +166,13 @@ export class PaymentService {
 
     // Verify webhook signature if secret configured
     if (secret && !secret.includes('placeholder')) {
-      const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
-      if (expected !== signature) {
-        throw new Error('Invalid webhook signature');
+      try {
+        const isWebhookValid = validateWebhookSignature(body, signature, secret);
+        if (!isWebhookValid) {
+          throw new Error('Invalid webhook signature');
+        }
+      } catch (err) {
+        throw new Error('Webhook signature validation failed');
       }
     }
 
