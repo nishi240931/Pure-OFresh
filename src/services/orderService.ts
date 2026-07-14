@@ -103,15 +103,11 @@ export class OrderService {
           where: { cartId: cart.id },
         });
 
-        // If paying via COD, set payment status to PENDING. If RAZORPAY, mark PAID as simulated in sprint requirement.
-        if (data.paymentMethod === PaymentMethod.RAZORPAY) {
-          await orderRepository.updatePaymentStatus(newOrder.id, PaymentStatus.PAID, tx);
-          newOrder.paymentStatus = PaymentStatus.PAID;
+        // If paying via COD, mark orderStatus as CONFIRMED. If RAZORPAY, keep both as PENDING until payment is verified.
+        if (data.paymentMethod === PaymentMethod.COD) {
+          await orderRepository.updateOrderStatus(newOrder.id, OrderStatus.CONFIRMED, tx);
+          newOrder.orderStatus = OrderStatus.CONFIRMED;
         }
-
-        // Set orderStatus to CONFIRMED for payment successes or COD directly
-        await orderRepository.updateOrderStatus(newOrder.id, OrderStatus.CONFIRMED, tx);
-        newOrder.orderStatus = OrderStatus.CONFIRMED;
 
         return newOrder;
       });
