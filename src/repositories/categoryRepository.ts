@@ -4,7 +4,11 @@ import { Category } from '@prisma/client';
 export class CategoryRepository {
   async findAll(): Promise<Category[]> {
     return db.category.findMany({
-      orderBy: { name: 'asc' },
+      where: { isActive: true },
+      orderBy: [
+        { displayOrder: 'asc' },
+        { name: 'asc' }
+      ],
     });
   }
 
