@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+model User {
+  id           String    @id @default(uuid())
+  clerkId      String    @unique
+  fullName     String
+  email        String    @unique
+  phone        String?
+  profileImage String?
+  role         Role      @default(CUSTOMER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  addresses    Address[]
+  orders       Order[]
+  reviews      Review[]
+  cart         Cart?
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+model Address {
+  id           String      @id @default(uuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName     String
+  phone        String
+  addressLine1 String
+  addressLine2 String?
+  landmark     String?
+  city         String
+  state        String
+  postalCode   String
+  country      String      @default("India")
+  addressType  AddressType @default(HOME)
+  isDefault    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  orders       Order[]
+
+  @@index([userId])
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  image       String
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum Unit {
+  g
+  kg
+  ml
+  L
+  pcs
+}
+
+model Product {
+  id            String      @id @default(uuid())
+  name          String
+  slug          String      @unique
+  description   String
+  image         String
+  images        String[] // gallery
+  price         Float
+  discountPrice Float?
+  weight        Float
+  unit          Unit
+  stock         Int         @default(0)
+  sku           String      @unique
+  rating        Float       @default(5.0)
+  reviewCount   Int         @default(0)
+  isOrganic     Boolean     @default(false)
+  isFeatured    Boolean     @default(false)
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
+  orderItems    OrderItem[]
+  reviews       Review[]
+  cartItems     CartItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([price])
+  @@index([isOrganic])
+  @@index([isFeatured])
+  @@index([stock])
+  @@index([rating])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PACKED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  COD
+  RAZORPAY
+}
+
+model Order {
+  id                   String        @id @default(uuid())
+  orderNumber          String        @unique
+  userId               String
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addressId            String
+  address              Address       @relation(fields: [addressId], references: [id])
+  subtotal             Float
+  discount             Float         @default(0)
+  couponDiscount       Float         @default(0)
+  deliveryFee          Float
+  gst                  Float
+  grandTotal           Float
+  paymentStatus        PaymentStatus @default(PENDING)
+  orderStatus          OrderStatus   @default(PENDING)
+  paymentMethod        PaymentMethod
+  deliverySlot         String?
+  couponCode           String?
+  notes                String?
+  razorpayOrderId      String?
+  razorpayPaymentId    String?
+  razorpaySignature    String?
+  paymentCompletedAt   DateTime?
+  paymentFailureReason String?
+  paymentAttempts      Int           @default(0)
+  items                OrderItem[]
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([orderStatus])
+  @@index([paymentStatus])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id           String   @id @default(uuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  productName  String
+  productImage String
+  quantity     Int
+  unitPrice    Float
+  totalPrice   Float
+  createdAt    DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  discount     Float // percentage or absolute value
+  discountType String   @default("PERCENTAGE") // PERCENTAGE, ABSOLUTE
+  minPurchase  Float    @default(0)
+  maxDiscount  Float?
+  expiryDate   DateTime
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id              String   @id @default(uuid())
+  cartId          String
+  cart            Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity        Int      @default(1)
+  priceAtAddition Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([cartId])
+  @@index([productId])
+}
