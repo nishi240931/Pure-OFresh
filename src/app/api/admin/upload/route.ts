@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { userRepository } from '@/repositories/userRepository';
-import fs from 'fs';
-import path from 'path';
 
 export async function POST(req: Request) {
   try {
@@ -41,23 +39,46 @@ export async function POST(req: Request) {
       );
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    fs.mkdirSync(uploadDir, { recursive: true });
+    // Read Cloudinary configs
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '';
+    const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || process.env.CLOUDINARY_UPLOAD_PRESET || '';
 
-    // Generate unique name
-    const ext = path.extname(file.name) || '.jpg';
-    const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${ext}`;
-    const filePath = path.join(uploadDir, filename);
+    if (!cloudName || !preset || cloudName.includes('placeholder') || preset.includes('placeholder')) {
+      return NextResponse.json(
+        { success: false, message: 'Cloudinary is not configured correctly on the server.' },
+        { status: 500 }
+      );
+    }
 
-    fs.writeFileSync(filePath, buffer);
+    // Convert file to buffer and then upload to Cloudinary
+    const cloudinaryFormData = new FormData();
+    cloudinaryFormData.append('upload_preset', preset);
+    cloudinaryFormData.append('file', file);
+
+    const cloudinaryRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: cloudinaryFormData,
+      }
+    );
+
+    if (!cloudinaryRes.ok) {
+      const errData = await cloudinaryRes.json().catch(() => ({}));
+      return NextResponse.json(
+        { success: false, message: errData.error?.message || 'Cloudinary upload rejected.' },
+        { status: 500 }
+      );
+    }
+
+    const data = await cloudinaryRes.json();
 
     return NextResponse.json({
       success: true,
-      secure_url: `/uploads/${filename}`,
+      secure_url: data.secure_url,
     });
   } catch (err: any) {
-    console.error('Failed to upload file locally:', err);
+    console.error('Failed to upload file to Cloudinary:', err);
     return NextResponse.json(
       { success: false, message: err.message || 'File upload failed.' },
       { status: 500 }
