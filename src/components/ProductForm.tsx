@@ -49,7 +49,7 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
     }
   }, [watchImage]);
 
-  // Cloudinary direct upload
+  // Cloudinary or Local direct upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -58,33 +58,54 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
     setFormError(null);
 
     try {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'demo';
-      const preset = 'ml_default'; // Standard fallback preset
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '';
+      const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '';
+
+      const isCloudinaryConfigured = cloudName && preset && 
+        !cloudName.includes('placeholder') && !preset.includes('placeholder') && 
+        cloudName !== 'demo';
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', preset);
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      let imageUrl = '';
 
-      if (!res.ok) {
-        throw new Error('Cloudinary upload rejected. Preset may not be active.');
+      if (isCloudinaryConfigured) {
+        formData.append('upload_preset', preset);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error('Cloudinary upload rejected.');
+        }
+
+        const data = await res.json();
+        imageUrl = data.secure_url;
+      } else {
+        // Fallback to local upload endpoint
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error('Local upload fallback failed.');
+        }
+
+        const data = await res.json();
+        imageUrl = data.secure_url;
       }
 
-      const data = await res.json();
-      if (data.secure_url) {
-        setValue('image', data.secure_url, { shouldValidate: true });
-        setImagePreview(data.secure_url);
+      if (imageUrl) {
+        setValue('image', imageUrl, { shouldValidate: true });
+        setImagePreview(imageUrl);
       } else {
-        throw new Error('Cloudinary secure url not found in response.');
+        throw new Error('Secure URL not found in upload response.');
       }
     } catch (err: any) {
-      console.warn('Cloudinary upload failed, falling back to local object URL for preview:', err);
-      // Fallback: create temporary object URL so they can still see it,
-      // but warn them or let them enter a link manually.
+      console.warn('Image upload failed, falling back to local object URL for preview:', err);
       const localUrl = URL.createObjectURL(file);
       setValue('image', 'https://images.unsplash.com/photo-1610348725531-843dff163e2c?w=500', { shouldValidate: true });
       setImagePreview(localUrl);
@@ -124,20 +145,27 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl w-full max-w-2xl border border-slate-200 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-scale-in">
+      <form 
+        onSubmit={handleSubmit(onSubmit)} 
+        className="bg-white rounded-3xl w-full max-w-2xl border border-slate-200 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-scale-in"
+      >
         
         {/* Modal Header */}
         <div className="h-16 px-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
           <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
             {product ? 'Edit Product' : 'Add New Product'}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition"
+          >
             <X className="h-4.5 w-4.5" />
           </button>
         </div>
 
         {/* Modal Form body */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           
           {formError && (
             <div className="p-4 bg-amber-50 border border-amber-100 text-amber-800 rounded-2xl flex items-start gap-2.5 text-xs font-semibold">
@@ -261,7 +289,7 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">SKU Code</label>
               <input 
                 type="text" 
-                disabled={!!product}
+                disabled={true}
                 value={product?.sku || 'Auto-generated if left blank'}
                 placeholder="Auto-generated if left blank"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none text-xs font-semibold bg-slate-50 text-slate-500"
@@ -320,7 +348,7 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
                 <input 
                   type="checkbox" 
                   {...register('isOrganic')}
-                  className="h-4 w-4 rounded border-slate-350 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0"
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0"
                 />
                 <span className="text-xs font-bold text-slate-700">Mark as Organic Product</span>
               </label>
@@ -329,7 +357,7 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
                 <input 
                   type="checkbox" 
                   {...register('isFeatured')}
-                  className="h-4 w-4 rounded border-slate-350 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0"
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0"
                 />
                 <span className="text-xs font-bold text-slate-700">Feature on Storefront</span>
               </label>
@@ -337,28 +365,28 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
 
           </div>
 
-          {/* Modal Buttons Footer */}
-          <div className="pt-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-white shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-bold transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || uploading}
-              className="px-5 py-2.5 bg-[#FF6B00] hover:bg-accent text-white rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-md disabled:opacity-50"
-            >
-              {(isSubmitting || uploading) && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {product ? 'Save Changes' : 'Create Product'}
-            </button>
-          </div>
+        </div>
 
-        </form>
+        {/* Modal Buttons Footer */}
+        <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 rounded-full text-xs font-bold transition border border-slate-200 shadow-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || uploading}
+            className="px-5 py-2.5 bg-[#FF6B00] hover:bg-accent text-white rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-md disabled:opacity-50"
+          >
+            {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {product ? 'Save Changes' : 'Create Product'}
+          </button>
+        </div>
 
-      </div>
+      </form>
     </div>
   );
 }

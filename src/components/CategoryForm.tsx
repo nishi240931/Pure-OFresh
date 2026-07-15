@@ -7,7 +7,7 @@ import { createCategorySchema } from '@/validators/adminCategoryValidator';
 import { X, Upload, Loader2, AlertCircle } from 'lucide-react';
 
 interface CategoryFormProps {
-  category?: any; // If editing, pass current category
+  category?: any; // If editing, pass current category details
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -29,8 +29,8 @@ export default function CategoryForm({ category, onClose, onSuccess }: CategoryF
       name: category?.name || '',
       slug: category?.slug || '',
       description: category?.description || '',
-      displayOrder: category?.displayOrder !== undefined ? category.displayOrder : 0,
-      isActive: category?.isActive !== undefined ? category.isActive : true,
+      displayOrder: category?.displayOrder ?? 0,
+      isActive: category?.isActive ?? true,
       image: category?.image || '',
     },
   });
@@ -43,7 +43,7 @@ export default function CategoryForm({ category, onClose, onSuccess }: CategoryF
     }
   }, [watchImage]);
 
-  // Cloudinary direct upload
+  // Cloudinary or Local direct upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -52,31 +52,54 @@ export default function CategoryForm({ category, onClose, onSuccess }: CategoryF
     setFormError(null);
 
     try {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'demo';
-      const preset = 'ml_default'; // Standard fallback preset
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '';
+      const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '';
+
+      const isCloudinaryConfigured = cloudName && preset && 
+        !cloudName.includes('placeholder') && !preset.includes('placeholder') && 
+        cloudName !== 'demo';
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', preset);
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      let imageUrl = '';
 
-      if (!res.ok) {
-        throw new Error('Cloudinary upload rejected. Preset may not be active.');
+      if (isCloudinaryConfigured) {
+        formData.append('upload_preset', preset);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error('Cloudinary upload rejected.');
+        }
+
+        const data = await res.json();
+        imageUrl = data.secure_url;
+      } else {
+        // Fallback to local upload endpoint
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error('Local upload fallback failed.');
+        }
+
+        const data = await res.json();
+        imageUrl = data.secure_url;
       }
 
-      const data = await res.json();
-      if (data.secure_url) {
-        setValue('image', data.secure_url, { shouldValidate: true });
-        setImagePreview(data.secure_url);
+      if (imageUrl) {
+        setValue('image', imageUrl, { shouldValidate: true });
+        setImagePreview(imageUrl);
       } else {
-        throw new Error('Cloudinary secure url not found in response.');
+        throw new Error('Secure URL not found in upload response.');
       }
     } catch (err: any) {
-      console.warn('Cloudinary upload failed, falling back to local object URL for preview:', err);
+      console.warn('Image upload failed, falling back to local object URL for preview:', err);
       const localUrl = URL.createObjectURL(file);
       setValue('image', 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500', { shouldValidate: true });
       setImagePreview(localUrl);
@@ -106,200 +129,178 @@ export default function CategoryForm({ category, onClose, onSuccess }: CategoryF
         setFormError(json.message || 'Action failed.');
       }
     } catch (err: any) {
-      console.error('Error saving category:', err);
       setFormError(err.message || 'An unexpected error occurred.');
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[32px] border border-slate-200/60 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <form 
+        onSubmit={handleSubmit(onSubmit)} 
+        className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col animate-scale-in"
+      >
+        
+        {/* Modal Header */}
+        <div className="h-16 px-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
           <div>
-            <h2 className="text-xl font-extrabold font-display text-slate-800 tracking-tight">
+            <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
               {category ? 'Edit Category' : 'Create Category'}
             </h2>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              {category ? 'Update the details and visibility of this category' : 'Define a new product segment'}
-            </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-50 transition-colors"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4.5 w-4.5" />
           </button>
         </div>
 
-        {formError && (
-          <div className="p-4 bg-rose-550/10 border border-rose-550/20 rounded-2xl flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-rose-605 mt-0.5 shrink-0" />
-            <p className="text-xs font-semibold text-rose-605">{formError}</p>
-          </div>
-        )}
+        {/* Modal Form body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          
+          {formError && (
+            <div className="p-4 bg-amber-50 border border-amber-100 text-amber-800 rounded-2xl flex items-start gap-2.5 text-xs font-semibold">
+              <AlertCircle className="h-4.5 w-4.5 shrink-0 text-amber-600" />
+              <span>{formError}</span>
+            </div>
+          )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          {/* Name */}
+          {/* NAME */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">Category Name</label>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Category Name</label>
             <input
               type="text"
               {...register('name')}
-              placeholder="e.g. Fresh Fruits"
-              className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200/70 rounded-2xl px-4 py-3 placeholder:text-slate-400 focus:outline-none focus:border-slate-350 focus:bg-white transition-colors"
+              placeholder="e.g. Organic Fruits"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-semibold"
             />
             {errors.name && (
               <p className="text-[10px] font-semibold text-rose-600">{errors.name.message as string}</p>
             )}
           </div>
 
-          {/* Slug */}
+          {/* SLUG */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">
-              Slug <span className="text-slate-400 font-normal">(Optional - will auto-generate if empty)</span>
-            </label>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Slug (Optional)</label>
             <input
               type="text"
               {...register('slug')}
-              placeholder="e.g. fresh-fruits"
-              className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200/70 rounded-2xl px-4 py-3 placeholder:text-slate-400 focus:outline-none focus:border-slate-350 focus:bg-white transition-colors"
+              placeholder="e.g. organic-fruits (kebab-case)"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-semibold"
             />
             {errors.slug && (
               <p className="text-[10px] font-semibold text-rose-600">{errors.slug.message as string}</p>
             )}
           </div>
 
-          {/* Description */}
+          {/* DESCRIPTION */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">Description</label>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Description (Optional)</label>
             <textarea
-              rows={3}
               {...register('description')}
-              placeholder="Provide a brief summary of the products in this category..."
-              className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200/70 rounded-2xl p-4 placeholder:text-slate-400 focus:outline-none focus:border-slate-350 focus:bg-white resize-none transition-colors"
+              rows={3}
+              placeholder="Provide a description..."
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-semibold"
             />
             {errors.description && (
               <p className="text-[10px] font-semibold text-rose-600">{errors.description.message as string}</p>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Display Order */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Display Order</label>
-              <input
-                type="number"
-                {...register('displayOrder', { valueAsNumber: true })}
-                className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200/70 rounded-2xl px-4 py-3 focus:outline-none focus:border-slate-350 focus:bg-white transition-colors"
-              />
-              {errors.displayOrder && (
-                <p className="text-[10px] font-semibold text-rose-600">{errors.displayOrder.message as string}</p>
-              )}
-            </div>
-
-            {/* Is Active */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Active Status</label>
-              <div className="flex items-center h-[46px]">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    {...register('isActive')}
-                    className="sr-only peer"
-                  />
-                  <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                  <span className="ml-3 text-xs font-semibold text-slate-600">
-                    {watch('isActive') ? 'Active' : 'Inactive'}
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Image Uploader */}
+          {/* DISPLAY ORDER */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">Category Image</label>
-            <div className="flex items-center gap-4">
-              {imagePreview ? (
-                <div className="h-16 w-16 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden shrink-0">
-                  <img
-                    src={imagePreview}
-                    alt="Category Preview"
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500';
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="h-16 w-16 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-center text-slate-350 shrink-0">
-                  <Upload className="h-5 w-5" />
-                </div>
-              )}
-
-              <div className="flex-1 space-y-1">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={uploading}
-                  id="category-file-upload"
-                  className="hidden"
-                />
-                <label
-                  htmlFor="category-file-upload"
-                  className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/70 cursor-pointer px-4 py-2 rounded-xl text-xs font-bold text-slate-650 transition-colors"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-3.5 w-3.5 text-slate-500" />
-                      Upload Image
-                    </>
-                  )}
-                </label>
-                <p className="text-[9px] text-slate-400 font-medium">PNG, JPG, or JPEG formats. Handled directly via Cloudinary.</p>
-              </div>
-            </div>
-            {/* hidden text field to bind image URL in form */}
-            <input type="hidden" {...register('image')} />
-            {errors.image && (
-              <p className="text-[10px] font-semibold text-rose-600">{errors.image.message as string}</p>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Display Order</label>
+            <input
+              type="number"
+              {...register('displayOrder', { valueAsNumber: true })}
+              placeholder="e.g. 0, 1, 2 (lower numbers show first)"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-semibold"
+            />
+            {errors.displayOrder && (
+              <p className="text-[10px] font-semibold text-rose-600">{errors.displayOrder.message as string}</p>
             )}
           </div>
 
-          {/* Footer Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-2xl transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || uploading}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-2xl transition-colors"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Category'
-              )}
-            </button>
+          {/* IMAGE UPLOAD */}
+          <div className="space-y-3 pt-2">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Category Image</label>
+            
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              
+              <div className="h-20 w-20 border border-slate-200 rounded-2xl overflow-hidden shrink-0 bg-slate-50 flex items-center justify-center relative">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-[9px] text-slate-400 font-bold">No Image</span>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2 w-full">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-xl shadow-sm border border-slate-200 cursor-pointer transition">
+                    <Upload className="h-3.5 w-3.5" />
+                    {uploading ? 'Uploading...' : 'Upload Image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                  </label>
+                  {uploading && <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />}
+                </div>
+
+                <input
+                  {...register('image')}
+                  type="text"
+                  placeholder="Or paste direct image URL"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-xs font-semibold"
+                />
+                {errors.image && (
+                  <p className="text-[10px] font-semibold text-rose-600">{errors.image.message as string}</p>
+                )}
+              </div>
+
+            </div>
+
           </div>
-        </form>
-      </div>
+
+          {/* ACTIVE STATUS CHECKBOX */}
+          <div className="pt-2">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                {...register('isActive')}
+                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 focus:ring-offset-0"
+              />
+              <span className="text-xs font-bold text-slate-700">Category Active & Visible to Storefront</span>
+            </label>
+          </div>
+
+        </div>
+
+        {/* Modal Buttons Footer */}
+        <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-750 rounded-full text-xs font-bold transition border border-slate-200 shadow-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || uploading}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-md disabled:opacity-50"
+          >
+            {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {category ? 'Save Changes' : 'Create Category'}
+          </button>
+        </div>
+
+      </form>
     </div>
   );
 }

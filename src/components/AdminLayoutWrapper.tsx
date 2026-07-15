@@ -69,7 +69,7 @@ export default function AdminLayoutWrapper({ children, user }: AdminLayoutWrappe
     <div className="min-h-screen bg-slate-50 flex font-sans">
       
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex flex-col w-64 bg-slate-900 text-slate-300 border-r border-slate-800 shrink-0">
+      <aside className="hidden lg:flex flex-col w-[260px] bg-slate-900 text-slate-300 border-r border-slate-800 shrink-0">
         {/* Brand header */}
         <div className="h-16 px-6 border-b border-slate-800 flex items-center gap-2 bg-slate-950">
           <span className="text-xl font-extrabold font-display tracking-tight text-white flex items-center gap-1.5">
@@ -114,7 +114,7 @@ export default function AdminLayoutWrapper({ children, user }: AdminLayoutWrappe
       {/* MOBILE DRAWER SIDEBAR */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden bg-slate-900/80 backdrop-blur-sm">
-          <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full shadow-2xl animate-slide-in">
+          <div className="w-[260px] bg-slate-900 text-slate-300 flex flex-col h-full shadow-2xl animate-slide-in">
             <div className="h-16 px-6 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <span className="text-xl font-extrabold font-display tracking-tight text-white flex items-center gap-1.5">
                 <span className="text-emerald-500 font-black">O</span> Fresh

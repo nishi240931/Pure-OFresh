@@ -108,8 +108,8 @@ export default function AdminProductsPage() {
     try {
       const res = await fetch('/api/categories');
       const data = await res.json();
-      if (data.success && data.data) {
-        setCategories(data.data);
+      if (data.success && (data.categories || data.data)) {
+        setCategories(data.categories || data.data || []);
       }
     } catch (err) {
       console.error('Failed to load categories:', err);

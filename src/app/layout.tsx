@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import { ClerkProvider } from '@clerk/nextjs';
 
 const inter = Inter({
@@ -34,6 +32,7 @@ export const metadata: Metadata = {
 };
 
 import CatalogInitializer from '@/components/CatalogInitializer';
+import StorefrontLayout from '@/components/StorefrontLayout';
 
 export default function RootLayout({
   children,
@@ -48,17 +47,7 @@ export default function RootLayout({
       >
         <body className="min-h-full flex flex-col bg-white text-slate-800 antialiased font-sans selection:bg-primary/20 selection:text-primary-dark">
           <CatalogInitializer />
-          
-          {/* Sticky Header Navbar */}
-          <Navbar />
-
-          {/* Main Content Area */}
-          <main className="flex-grow">
-            {children}
-          </main>
-
-          {/* Global Footer */}
-          <Footer />
+          <StorefrontLayout>{children}</StorefrontLayout>
         </body>
       </html>
     </ClerkProvider>
