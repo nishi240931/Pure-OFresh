@@ -4,6 +4,8 @@ export interface DashboardMetricsDto {
   totalRevenue: number;
   totalOrders: number;
   totalCustomers: number;
+  newCustomers?: number;
+  repeatCustomers?: number;
   totalProducts: number;
   pendingOrders: number;
   deliveredOrders: number;
@@ -17,6 +19,8 @@ export class AdminService {
         totalRevenue,
         totalOrders,
         totalCustomers,
+        newCustomers,
+        repeatCustomers,
         totalProducts,
         pendingOrders,
         deliveredOrders,
@@ -25,6 +29,8 @@ export class AdminService {
         adminRepository.getTotalRevenue(),
         adminRepository.getTotalOrders(),
         adminRepository.getTotalCustomers(),
+        adminRepository.getNewCustomersCount(),
+        adminRepository.getRepeatCustomersCount(),
         adminRepository.getTotalProducts(),
         adminRepository.getPendingOrdersCount(),
         adminRepository.getDeliveredOrdersCount(),
@@ -35,6 +41,8 @@ export class AdminService {
         totalRevenue,
         totalOrders,
         totalCustomers,
+        newCustomers,
+        repeatCustomers,
         totalProducts,
         pendingOrders,
         deliveredOrders,

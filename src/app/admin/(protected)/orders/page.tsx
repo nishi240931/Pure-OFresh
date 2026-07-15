@@ -123,7 +123,6 @@ export default function AdminOrdersPage() {
       fetchOrders();
     }
   }, [isHydrated, currentPage, statusFilter, paymentFilter, sortOrder]);
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
@@ -144,6 +143,16 @@ export default function AdminOrdersPage() {
       alert(err.message || 'Error fetching order details.');
     }
   };
+
+  useEffect(() => {
+    if (isHydrated) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const orderId = searchParams.get('orderId');
+      if (orderId) {
+        handleViewOrder(orderId);
+      }
+    }
+  }, [isHydrated]);
 
   const handleUpdateStatus = async (targetStatus: string) => {
     if (!selectedOrder) return;

@@ -18,6 +18,8 @@ interface DashboardStats {
   totalRevenue: number;
   totalOrders: number;
   totalCustomers: number;
+  newCustomers?: number;
+  repeatCustomers?: number;
   totalProducts: number;
   pendingOrders: number;
   deliveredOrders: number;
@@ -174,9 +176,10 @@ export default function AdminDashboardPage() {
               </div>
               <div className="mt-4">
                 <h3 className="text-2xl font-black font-display text-slate-800">{stats.totalCustomers}</h3>
-                <p className="text-[10px] font-bold text-violet-600 mt-1 flex items-center gap-1">
-                  <span>●</span> Registered buyer profiles
-                </p>
+                <div className="text-[9px] font-bold text-slate-400 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                  <span className="text-emerald-650">● {stats.newCustomers ?? 0} New (30d)</span>
+                  <span className="text-violet-600">● {stats.repeatCustomers ?? 0} Repeat</span>
+                </div>
               </div>
             </div>
 

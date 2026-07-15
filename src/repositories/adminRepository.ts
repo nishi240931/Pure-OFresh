@@ -25,6 +25,31 @@ export class AdminRepository {
     });
   }
 
+  async getNewCustomersCount(): Promise<number> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return db.user.count({
+      where: {
+        role: 'CUSTOMER',
+        createdAt: {
+          gte: thirtyDaysAgo,
+        },
+      },
+    });
+  }
+
+  async getRepeatCustomersCount(): Promise<number> {
+    const customers = await db.user.findMany({
+      where: { role: 'CUSTOMER' },
+      select: {
+        _count: {
+          select: { orders: true }
+        }
+      }
+    });
+    return customers.filter(c => c._count.orders > 1).length;
+  }
+
   async getTotalProducts(): Promise<number> {
     return db.product.count();
   }
