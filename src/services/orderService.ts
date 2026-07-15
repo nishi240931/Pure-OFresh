@@ -98,10 +98,12 @@ export class OrderService {
           notes: data.notes,
         }, items, tx);
 
-        // Clear user's cart items
-        await tx.cartItem.deleteMany({
-          where: { cartId: cart.id },
-        });
+        // Clear user's cart items only if paying via COD. For Razorpay, we clear it upon successful verification.
+        if (data.paymentMethod === PaymentMethod.COD) {
+          await tx.cartItem.deleteMany({
+            where: { cartId: cart.id },
+          });
+        }
 
         // If paying via COD, mark orderStatus as CONFIRMED. If RAZORPAY, keep both as PENDING until payment is verified.
         if (data.paymentMethod === PaymentMethod.COD) {

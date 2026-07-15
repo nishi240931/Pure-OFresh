@@ -45,6 +45,7 @@ export const CheckoutPage = () => {
   const checkoutSummary = useStore((state) => state.checkoutSummary);
   const coupon = useStore((state) => state.coupon);
   const placeOrderOnServer = useStore((state) => state.placeOrderOnServer);
+  const clearLocalCart = useStore((state) => state.clearLocalCart);
 
   const getCartSubtotal = useStore((state) => state.getCartSubtotal);
   const getCartDiscount = useStore((state) => state.getCartDiscount);
@@ -294,6 +295,7 @@ export const CheckoutPage = () => {
 
       if (verifyRes.success) {
         setRazorpayStep('SUCCESS');
+        clearLocalCart();
         setTimeout(async () => {
           setRazorpayOpen(false);
           const detailRes = await fetch(`/api/orders/${activeOrderId}`).then((r) => r.json());

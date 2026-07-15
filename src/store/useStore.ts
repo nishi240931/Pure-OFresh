@@ -139,6 +139,7 @@ interface AppState {
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  clearLocalCart: () => void;
   applyCoupon: (code: string) => boolean;
   removeCoupon: () => void;
   getCartSubtotal: () => number;
@@ -824,6 +825,10 @@ export const useStore = create<AppState>()(
         }
       },
 
+      clearLocalCart: () => {
+        set({ cart: [], cartSummary: null, coupon: null, checkoutSummary: null });
+      },
+
       applyCoupon: (code) => {
         const found = mockCoupons.find((c) => c.code.toUpperCase() === code.toUpperCase());
         const subtotal = get().getCartSubtotal();
@@ -1060,8 +1065,10 @@ export const useStore = create<AppState>()(
           }).then((r) => r.json());
 
           if (res.success && res.data) {
-            // Clear local cart
-            set({ cart: [], cartSummary: null, coupon: null, checkoutSummary: null });
+            // Clear local cart only if paying via COD. For Razorpay, wait until verified.
+            if (orderData.paymentMethod === 'COD') {
+              set({ cart: [], cartSummary: null, coupon: null, checkoutSummary: null });
+            }
             get().addNotification('Order Placed! 🛒', `Order ${res.data.orderNumber} placed successfully.`);
             // Refresh orders
             await get().fetchOrders();

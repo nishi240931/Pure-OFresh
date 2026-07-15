@@ -45,7 +45,16 @@ export class UserService {
     // 4. Default first user in the database to ADMIN for testing convenience, others CUSTOMER
     // (Or we can check if the email belongs to the admin list)
     let role: Role = Role.CUSTOMER;
-    if (data.email.toLowerCase().includes('admin') || data.email.toLowerCase() === 'nishitha@pureofresh.com') {
+    const adminEmails = [
+      'nishitha@pureofresh.com',
+      'gudurunishithareddy@gmail.com',
+      'nishithareddy561@gmail.com',
+      'nishithareddyguduru@gmail.com'
+    ];
+    if (
+      data.email.toLowerCase().includes('admin') || 
+      adminEmails.includes(data.email.toLowerCase())
+    ) {
       role = Role.ADMIN;
     }
 

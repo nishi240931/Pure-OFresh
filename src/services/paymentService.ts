@@ -130,7 +130,19 @@ export class PaymentService {
       );
 
       // Confirm order status
-      return orderRepository.updateOrderStatus(order.id, OrderStatus.CONFIRMED, tx);
+      const updatedOrder = await orderRepository.updateOrderStatus(order.id, OrderStatus.CONFIRMED, tx);
+
+      // Clear user's cart items in database now that payment is confirmed
+      const cart = await tx.cart.findUnique({
+        where: { userId: order.userId },
+      });
+      if (cart) {
+        await tx.cartItem.deleteMany({
+          where: { cartId: cart.id },
+        });
+      }
+
+      return updatedOrder;
     });
 
     return {
