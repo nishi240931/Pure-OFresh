@@ -122,6 +122,7 @@ export default function AdminOrdersPage() {
     if (isHydrated) {
       fetchOrders();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHydrated, currentPage, statusFilter, paymentFilter, sortOrder]);
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,6 +153,7 @@ export default function AdminOrdersPage() {
         handleViewOrder(orderId);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHydrated]);
 
   const handleUpdateStatus = async (targetStatus: string) => {

@@ -137,6 +137,7 @@ export default function AdminCustomersPage() {
     if (isHydrated) {
       fetchCustomers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHydrated, currentPage, sortOrder]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {

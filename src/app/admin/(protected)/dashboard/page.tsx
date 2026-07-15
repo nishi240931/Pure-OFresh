@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -135,9 +136,9 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
             {/* CARD 1: REVENUE */}
-            <div className="bg-white rounded-3xl border border-slate-200/65 p-6 shadow-sm hover:shadow-md transition duration-200 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+            <Link href="/admin/analytics" className="bg-white rounded-3xl border border-slate-200/65 p-6 shadow-sm hover:shadow-md transition duration-200 relative overflow-hidden flex flex-col justify-between min-h-[140px] group">
               <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-emerald-600 transition">Total Revenue</span>
                 <div className="h-9 w-9 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center border border-emerald-100">
                   <TrendingUp className="h-4.5 w-4.5" />
                 </div>
@@ -145,15 +146,15 @@ export default function AdminDashboardPage() {
               <div className="mt-4">
                 <h3 className="text-2xl font-black font-display text-slate-800">{formatCurrency(stats.totalRevenue)}</h3>
                 <p className="text-[10px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
-                  <span>●</span> Paid orders settlement
+                  <span>●</span> View analytics trend
                 </p>
               </div>
-            </div>
+            </Link>
 
             {/* CARD 2: ORDERS */}
-            <div className="bg-white rounded-3xl border border-slate-200/65 p-6 shadow-sm hover:shadow-md transition duration-200 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+            <Link href="/admin/orders" className="bg-white rounded-3xl border border-slate-200/65 p-6 shadow-sm hover:shadow-md transition duration-200 relative overflow-hidden flex flex-col justify-between min-h-[140px] group">
               <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Orders</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-blue-600 transition">Total Orders</span>
                 <div className="h-9 w-9 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100">
                   <ShoppingBag className="h-4.5 w-4.5" />
                 </div>
@@ -161,15 +162,15 @@ export default function AdminDashboardPage() {
               <div className="mt-4">
                 <h3 className="text-2xl font-black font-display text-slate-800">{stats.totalOrders}</h3>
                 <p className="text-[10px] font-bold text-blue-600 mt-1 flex items-center gap-1">
-                  <span>●</span> Registered transactions
+                  <span>●</span> Manage user orders
                 </p>
               </div>
-            </div>
+            </Link>
 
             {/* CARD 3: CUSTOMERS */}
-            <div className="bg-white rounded-3xl border border-slate-200/65 p-6 shadow-sm hover:shadow-md transition duration-200 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+            <Link href="/admin/customers" className="bg-white rounded-3xl border border-slate-200/65 p-6 shadow-sm hover:shadow-md transition duration-200 relative overflow-hidden flex flex-col justify-between min-h-[140px] group">
               <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Customers</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-violet-650 transition">Total Customers</span>
                 <div className="h-9 w-9 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center border border-violet-100">
                   <Users className="h-4.5 w-4.5" />
                 </div>
@@ -178,15 +179,15 @@ export default function AdminDashboardPage() {
                 <h3 className="text-2xl font-black font-display text-slate-800">{stats.totalCustomers}</h3>
                 <div className="text-[9px] font-bold text-slate-400 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
                   <span className="text-emerald-650">● {stats.newCustomers ?? 0} New (30d)</span>
-                  <span className="text-violet-600">● {stats.repeatCustomers ?? 0} Repeat</span>
+                  <span className="text-violet-605">● {stats.repeatCustomers ?? 0} Repeat</span>
                 </div>
               </div>
-            </div>
+            </Link>
 
             {/* CARD 4: PRODUCTS */}
-            <div className="bg-white rounded-3xl border border-slate-200/65 p-6 shadow-sm hover:shadow-md transition duration-200 relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+            <Link href="/admin/products" className="bg-white rounded-3xl border border-slate-200/65 p-6 shadow-sm hover:shadow-md transition duration-200 relative overflow-hidden flex flex-col justify-between min-h-[140px] group">
               <div className="flex justify-between items-start">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Products</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-amber-600 transition">Total Products</span>
                 <div className="h-9 w-9 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center border border-amber-100">
                   <Package className="h-4.5 w-4.5" />
                 </div>
@@ -194,10 +195,10 @@ export default function AdminDashboardPage() {
               <div className="mt-4">
                 <h3 className="text-2xl font-black font-display text-slate-800">{stats.totalProducts}</h3>
                 <p className="text-[10px] font-bold text-amber-600 mt-1 flex items-center gap-1">
-                  <span>●</span> Unique catalog items
+                  <span>●</span> Manage store products
                 </p>
               </div>
-            </div>
+            </Link>
 
           </div>
 
