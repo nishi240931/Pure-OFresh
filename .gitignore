@@ -50,4 +50,5 @@ next-env.d.ts
 /dist
 /build
 *.log
+/public/uploads/
 

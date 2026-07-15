@@ -28,7 +28,12 @@ export const createCategorySchema = z.object({
   isActive: z.boolean().optional(),
   image: z
     .string()
-    .url({ message: 'Image must be a valid URL.' })
+    .refine((val) => {
+      if (!val) return true;
+      return val.startsWith('/uploads/') || /^(https?:\/\/)/.test(val);
+    }, {
+      message: 'Image must be a valid URL starting with http://, https:// or /uploads/'
+    })
     .optional()
     .or(z.literal('')),
 });

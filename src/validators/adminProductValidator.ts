@@ -21,8 +21,20 @@ export const adminProductSchema = z
     stock: z.number().int().nonnegative({ message: 'Stock must be a non-negative integer.' }),
     isOrganic: z.boolean().default(false),
     isFeatured: z.boolean().default(false),
-    image: z.string().url({ message: 'Product image must be a valid URL.' }),
-    images: z.array(z.string().url()).optional(),
+    image: z.string().refine((val) => {
+      if (!val) return false;
+      return val.startsWith('/uploads/') || /^(https?:\/\/)/.test(val);
+    }, {
+      message: 'Product image must be a valid URL starting with http://, https:// or /uploads/.'
+    }),
+    images: z.array(
+      z.string().refine((val) => {
+        if (!val) return false;
+        return val.startsWith('/uploads/') || /^(https?:\/\/)/.test(val);
+      }, {
+        message: 'Product image must be a valid URL starting with http://, https:// or /uploads/.'
+      })
+    ).optional(),
     categoryId: z.string().min(1, { message: 'Category ID is required.' }),
   })
   .refine(
