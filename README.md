@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pure O Fresh – Organic Delivery E-Commerce
 
-## Getting Started
+Pure O Fresh is a high-performance, responsive e-commerce web application specialized in delivering fresh organic fruits, vegetables, dairy, and grocery essentials.
 
-First, run the development server:
+## 🚀 Key Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Storefront & Cart Experience
+- **Catalog Navigation**: Filter by category, organic status, pricing ranges, and search keywords.
+- **Shopping Cart**: Real-time item additions, quantity management, checkout calculations, and coupon codes.
+- **Payment Gateways**: Fully integrated **Razorpay** popup gateway and **Cash on Delivery (COD)** options.
+
+### Administrative Control Panel
+- **Dashboard & KPIs**: Real-time sales metrics, order counts, customer bases, and repeat-cohort indicators.
+- **Catalog Management**: Creation, visibility toggle, and pagination of products and categories.
+- **Order Lifecycle**: Full workflow tracking (`Pending -> Confirmed -> Packed -> Shipped -> Delivered`), stock updates, and cancellations.
+- **Analytics Dashboard**: Multi-timeline charts (Recharts) mapping revenue, registration volumes, top items, and native CSV/Excel export options.
+
+---
+
+## 🛠️ Architecture and Stack
+
+- **Framework**: [Next.js 16 (Turbopack)](https://nextjs.org) (App Router, Server Components).
+- **ORM & Database**: [Prisma Client](https://prisma.io) with PostgreSQL.
+- **Authentication**: [Clerk](https://clerk.com) authentication and user metadata-based role check.
+- **Validation**: Strict schema verification via [Zod](https://zod.dev).
+- **Styling**: Vanilla CSS alongside TailwindCSS variables.
+- **Visual Charts**: [Recharts](https://recharts.org) SVG panels.
+
+---
+
+## ⚙️ Environment Variables Setup
+
+Create a `.env` file in the root directory based on `.env.example`:
+
+```env
+# Database connection
+DATABASE_URL="postgresql://username:password@localhost:5432/pure_ofresh?schema=public"
+
+# Clerk credentials
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+CLERK_SECRET_KEY=your_secret_key
+
+# Razorpay credentials
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_key_id
+RAZORPAY_KEY_ID=rzp_test_key_id
+RAZORPAY_KEY_SECRET=rzp_test_key_secret
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Getting Started Locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. Run Prisma migrations and seed the database:
+   ```bash
+   npx prisma migrate dev
+   npx prisma db seed
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. Compile and verify code qualities:
+   ```bash
+   npm run build
+   npm run lint
+   ```
