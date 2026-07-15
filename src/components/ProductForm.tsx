@@ -66,24 +66,26 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
         cloudName !== 'demo';
 
       const formData = new FormData();
-      formData.append('file', file);
-
       let imageUrl = '';
 
       if (isCloudinaryConfigured) {
         formData.append('upload_preset', preset);
+        formData.append('file', file);
+
         const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
           method: 'POST',
           body: formData,
         });
 
         if (!res.ok) {
-          throw new Error('Cloudinary upload rejected.');
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error?.message || 'Cloudinary upload rejected.');
         }
 
         const data = await res.json();
         imageUrl = data.secure_url;
       } else {
+        formData.append('file', file);
         // Fallback to local upload endpoint
         const res = await fetch('/api/admin/upload', {
           method: 'POST',
@@ -91,7 +93,8 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
         });
 
         if (!res.ok) {
-          throw new Error('Local upload fallback failed.');
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Local upload fallback failed.');
         }
 
         const data = await res.json();
@@ -109,7 +112,7 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
       const localUrl = URL.createObjectURL(file);
       setValue('image', 'https://images.unsplash.com/photo-1610348725531-843dff163e2c?w=500', { shouldValidate: true });
       setImagePreview(localUrl);
-      setFormError('Cloudinary preset error: fallbacked to default placeholder image.');
+      setFormError(`Upload failed: ${err.message || 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
