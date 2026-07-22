@@ -244,22 +244,27 @@ export default function Home() {
               >
                 <Link
                   href={`/products?category=${cat.slug}`}
-                  className="block group rounded-2xl bg-white border border-slate-100 p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5"
+                  className="block group rounded-2xl bg-white border border-slate-100 p-4 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 h-full flex flex-col justify-between"
                 >
                   {/* Category Image Cover */}
-                  <div className="h-28 rounded-xl overflow-hidden mb-4 relative bg-slate-50">
+                  <div className="h-28 rounded-xl overflow-hidden mb-4 relative bg-slate-50 shrink-0">
                     <img
-                      src={cat.image}
+                      src={cat.image || '/images/category-placeholder.png'}
                       alt={cat.name}
                       className="h-full w-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/category-placeholder.png';
+                      }}
                     />
                     <div className="absolute top-2 right-2 h-7 w-7 bg-white rounded-full shadow-md flex items-center justify-center text-sm font-bold">
                       {cat.icon}
                     </div>
                   </div>
 
-                  <h3 className="font-bold text-slate-800 text-sm group-hover:text-primary transition">{cat.name}</h3>
-                  <p className="text-slate-400 text-xs font-semibold mt-1">{cat.count}</p>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm group-hover:text-primary transition">{cat.name}</h3>
+                    <p className="text-slate-400 text-xs font-semibold mt-1">{cat.count}</p>
+                  </div>
                 </Link>
               </motion.div>
             ))}

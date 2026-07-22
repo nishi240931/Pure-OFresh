@@ -45,27 +45,11 @@ export async function POST(req: Request) {
     const apiKey = process.env.CLOUDINARY_API_KEY || '';
     const apiSecret = process.env.CLOUDINARY_API_SECRET || '';
 
-    // Log the configuration presence (true/false only) for diagnostics
-    console.log('[Cloudinary Config Diagnostics]:', {
-      CLOUDINARY_CLOUD_NAME: !!process.env.CLOUDINARY_CLOUD_NAME,
-      CLOUDINARY_API_KEY: !!process.env.CLOUDINARY_API_KEY,
-      CLOUDINARY_API_SECRET: !!process.env.CLOUDINARY_API_SECRET,
-      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: !!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: !!process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
-    });
-
-    // Determine missing environment variables
-    const missingVars: string[] = [];
-    if (!cloudName) missingVars.push('CLOUDINARY_CLOUD_NAME');
-    if (!preset) missingVars.push('NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET');
-    if (!apiKey) missingVars.push('CLOUDINARY_API_KEY');
-    if (!apiSecret) missingVars.push('CLOUDINARY_API_SECRET');
-
-    if (missingVars.length > 0) {
+    if (!cloudName || !preset || !apiKey || !apiSecret) {
       return NextResponse.json(
         { 
           success: false, 
-          message: `Cloudinary is not configured correctly. Missing environment variables: ${missingVars.join(', ')}` 
+          message: 'Cloudinary upload service is not fully configured on the server.' 
         },
         { status: 500 }
       );

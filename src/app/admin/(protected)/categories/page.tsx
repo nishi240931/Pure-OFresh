@@ -309,11 +309,11 @@ export default function AdminCategoriesPage() {
                     <td className="py-4 px-6">
                       <div className="h-10 w-10 rounded-xl border border-slate-200/75 overflow-hidden bg-white shrink-0">
                         <img
-                          src={cat.image}
+                          src={cat.image || '/images/category-placeholder.png'}
                           alt={cat.name}
                           className="h-full w-full object-cover"
                           onError={(e) => {
-                            (e.target as any).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500';
+                            (e.target as any).src = '/images/category-placeholder.png';
                           }}
                         />
                       </div>

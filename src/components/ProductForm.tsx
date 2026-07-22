@@ -49,7 +49,6 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
     }
   }, [watchImage]);
 
-  // Cloudinary or Local direct upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -58,48 +57,22 @@ export default function ProductForm({ product, categories, onClose, onSuccess }:
     setFormError(null);
 
     try {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || '';
-      const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '';
-
-      const isCloudinaryConfigured = cloudName && preset && 
-        !cloudName.includes('placeholder') && !preset.includes('placeholder') && 
-        cloudName !== 'demo';
-
       const formData = new FormData();
-      let imageUrl = '';
+      formData.append('file', file);
 
-      if (isCloudinaryConfigured) {
-        formData.append('upload_preset', preset);
-        formData.append('file', file);
+      // Upload through the secure server-side upload API
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error?.message || 'Cloudinary upload rejected.');
-        }
-
-        const data = await res.json();
-        imageUrl = data.secure_url;
-      } else {
-        formData.append('file', file);
-        // Fallback to local upload endpoint
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || 'Local upload fallback failed.');
-        }
-
-        const data = await res.json();
-        imageUrl = data.secure_url;
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || 'Image upload failed.');
       }
+
+      const data = await res.json();
+      const imageUrl = data.secure_url;
 
       if (imageUrl) {
         setValue('image', imageUrl, { shouldValidate: true });
